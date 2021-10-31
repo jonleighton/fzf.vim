@@ -721,6 +721,67 @@ function! fzf#vim#buffers(...)
 endfunction
 
 " ------------------------------------------------------------------
+" BuffersFiles
+" ------------------------------------------------------------------
+function! fzf#vim#_format_buffers_files(b)
+  return "buffer\t" . fzf#vim#_format_buffer(a:b)
+endfunction
+
+function! s:buffers_files_open(lines)
+  if len(a:lines) < 2
+    return
+  endif
+
+  let parts = split(a:lines[1], "\t")
+  let mode = parts[0]
+
+  echo parts
+
+  if parts[0] == "buffer"
+    let a:lines[1] = join(parts[1:], "\t")
+    call s:bufopen(a:lines)
+  elseif parts[0] == "file"
+    execute 'edit' parts[1]
+  endif
+endfunction
+
+function! fzf#vim#buffers_files(dir, ...)
+  let [query, extra] = (a:0 && type(a:1) == type('')) ?
+        \ [a:1, a:000[1:]] : ['', a:000]
+
+  let sorted = map(fzf#vim#_buflisted_sorted(), 'fzf#vim#_format_buffers_files(v:val)')
+
+  let tempname = tempname()
+  call writefile(sorted, tempname)
+
+  let header_lines = '--header-lines=' . (bufnr('') == get(sorted, 0, 0) ? 1 : 0)
+  let tabstop = len(max(sorted)) >= 4 ? 9 : 8
+
+  let args = {
+  \ 'source':  'cat ' . tempname,
+  \ 'sink*':   s:function('s:buffers_files_open'),
+  \}
+
+  if !empty(a:dir)
+    if !isdirectory(expand(a:dir))
+      return s:warn('Invalid directory')
+    endif
+    let slash = (s:is_win && !&shellslash) ? '\\' : '/'
+    let dir = substitute(a:dir, '[/\\]*$', slash, '')
+    let args.dir = dir
+  else
+    let dir = s:shortpath()
+  endif
+
+  let dir_prompt = strwidth(dir) < &columns / 2 - 20 ? dir : '> '
+
+  " For some reason ctrl-f is not working if field 1 is not in the -n option
+  let args.options = ['+m', '-x', '--tiebreak=index', header_lines, '--ansi', '-d', '\t', '--with-nth', '4..', '-n', '3,2,4,1', '--prompt', 'Buf> ', '--query', query, '--preview-window', '+{3}-/2', '--tabstop', tabstop, '--bind=ctrl-f:reload(' . $FZF_DEFAULT_COMMAND . ' | sed "s/.*/file\t\0\t0\t\0/")+change-prompt(' . dir_prompt . ')', '--bind=ctrl-b:reload(cat ' . tempname . ')+change-prompt(Buf> )']
+
+  return s:fzf('buffers_files', args, extra)
+endfunction
+
+" ------------------------------------------------------------------
 " Ag / Rg
 " ------------------------------------------------------------------
 function! s:ag_to_qf(line, has_column)
