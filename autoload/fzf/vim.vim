@@ -776,7 +776,7 @@ function! fzf#vim#buffers_files(dir, ...)
   let dir_prompt = strwidth(dir) < &columns / 2 - 20 ? dir : '> '
 
   " For some reason ctrl-f is not working if field 1 is not in the -n option
-  let args.options = ['+m', '-x', '--tiebreak=index', header_lines, '--ansi', '-d', '\t', '--with-nth', '4..', '-n', '3,2,4,1', '--prompt', 'Buf> ', '--query', query, '--preview-window', '+{3}-/2', '--tabstop', tabstop, '--bind=ctrl-f:reload(' . $FZF_DEFAULT_COMMAND . ' | sed "s/.*/file\t\0\t0\t\0/")+change-prompt(' . dir_prompt . ')', '--bind=ctrl-b:reload(cat ' . tempname . ')+change-prompt(Buf> )']
+  let args.options = ['+m', '-x', '--tiebreak=index', header_lines, '--ansi', '-d', '\t', '--with-nth', '4..', '-n', '3,2,4,1', '--prompt', 'Buf> ', '--query', query, '--preview-window', '+{3}-/2', '--tabstop', tabstop, '--bind=ctrl-f:reload(' . $FZF_DEFAULT_COMMAND . ' | sed "s/\(.*\)/file\t\1\t\1\t\1/")+change-prompt(' . dir_prompt . ')', '--bind=ctrl-b:reload(cat ' . tempname . ')+change-prompt(Buf> )']
 
   return s:fzf('buffers_files', args, extra)
 endfunction
